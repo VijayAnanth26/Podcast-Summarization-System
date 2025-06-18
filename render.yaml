@@ -16,7 +16,7 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000
+        value: http://localhost:3000,https://podcast-summarization-system.vercel.app
       - key: UPLOAD_DIR
         value: ./uploads
       - key: MAX_UPLOAD_SIZE

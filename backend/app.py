@@ -90,7 +90,7 @@ app = FastAPI(
 )
 
 # CORS configuration
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,https://podcast-summarization-system.vercel.app").split(",")
 ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 ALLOWED_HEADERS = [
     "Content-Type",
