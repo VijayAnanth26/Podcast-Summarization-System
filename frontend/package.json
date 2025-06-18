@@ -1,0 +1,37 @@
+{
+  "name": "podcast-summarizer-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.1",
+    "@mui/material": "^7.0.1",
+    "axios": "^1.6.7",
+    "date-fns": "^4.1.0",
+    "formdata-node": "^6.0.3",
+    "lucide-react": "^0.323.0",
+    "next": "^14.1.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-error-boundary": "^5.0.0",
+    "react-hot-toast": "^2.5.2"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
