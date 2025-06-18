@@ -669,9 +669,13 @@ async def get_audio(filename: str):
 # Add this at the end of the file
 if __name__ == "__main__":
     import uvicorn
+    import sys
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "0.0.0.0")
     logger.info(f"Starting server on http://{host}:{port}")
+    print(f"Python version: {sys.version}")
+    print(f"Starting server on http://{host}:{port}")
+    print(f"Environment variables: PORT={os.environ.get('PORT')}")
     uvicorn.run(app, host=host, port=port)
 
 
