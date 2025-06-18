@@ -89,6 +89,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Log the port the app will be running on
+port = int(os.environ.get("PORT", 8000))
+logger.info(f"FastAPI will run on port: {port}")
+
 # CORS configuration
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,https://podcast-summarization-system.vercel.app").split(",")
 ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
@@ -181,7 +185,10 @@ def healthcheck():
     """
     Health check endpoint to verify API is running.
     """
-    return {"status": "ok", "service": "Podcast Processing API"}
+    # Log the port being used
+    port = os.environ.get("PORT", 8000)
+    logger.info(f"API running on port: {port}")
+    return {"status": "ok", "service": "Podcast Processing API", "port": port}
 
 # Root path redirect
 @app.get("/")

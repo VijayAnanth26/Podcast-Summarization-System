@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
 // Use direct backend URL to avoid Next.js proxy for large uploads
-const backendURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const backendURL = process.env.NEXT_PUBLIC_API_URL || "https://podcast-summarization-system.onrender.com";
 const REQUEST_TIMEOUT = 600000; // 10 minutes timeout for very long processing
 
 // Create axios instance with increased timeout
