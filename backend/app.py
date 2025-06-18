@@ -670,12 +670,18 @@ async def get_audio(filename: str):
 if __name__ == "__main__":
     import uvicorn
     import sys
-    port = int(os.environ.get("PORT", 8000))
-    host = os.environ.get("HOST", "0.0.0.0")
-    logger.info(f"Starting server on http://{host}:{port}")
+    
+    # Render sets PORT to 10000 by default
+    port = int(os.environ.get("PORT", 10000))
+    host = "0.0.0.0"  # Must bind to 0.0.0.0 for Render
+    
+    # Print debug information
     print(f"Python version: {sys.version}")
     print(f"Starting server on http://{host}:{port}")
     print(f"Environment variables: PORT={os.environ.get('PORT')}")
-    uvicorn.run(app, host=host, port=port)
+    logger.info(f"BINDING TO: http://{host}:{port}")
+    
+    # Run the app with the correct host and port
+    uvicorn.run("app:app", host=host, port=port)
 
 
