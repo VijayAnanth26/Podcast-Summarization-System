@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: podcast-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn run:app --host=0.0.0.0 --port=8000
+    pythonVersion: 3.10.13
+    envVars:
+      - key: WHISPER_MODEL_SIZE
+        value: base
+      - key: USE_GPU
+        value: true
+      - key: PORT
+        value: 8000
