@@ -88,3 +88,86 @@ class AudioProcessor:
         except Exception as e:
             logger.error(f"Error extracting metadata: {str(e)}")
             raise
+            
+    def trim_audio(self, file_path: Union[str, Path], start_time: float, end_time: float, 
+                  output_path: Optional[Union[str, Path]] = None) -> Path:
+        """
+        Trim audio/video file based on start and end times.
+        
+        Args:
+            file_path: Path to the input file
+            start_time: Start time in seconds
+            end_time: End time in seconds
+            output_path: Optional path for output file. If not provided, a temporary file is created.
+            
+        Returns:
+            Path to the trimmed file
+        """
+        try:
+            file_path = Path(file_path)
+            
+            if not file_path.exists():
+                raise FileNotFoundError(f"File not found: {file_path}")
+                
+            # Validate start and end times
+            if start_time < 0:
+                start_time = 0
+                
+            # Get file metadata to check duration
+            metadata = self.extract_metadata(file_path)
+            if end_time > metadata.duration:
+                end_time = metadata.duration
+                
+            if start_time >= end_time:
+                raise ValueError(f"Invalid time range: start_time ({start_time}) must be less than end_time ({end_time})")
+                
+            # Create output path if not provided
+            if output_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                extension = file_path.suffix
+                output_path = self.cache_dir / f"trim_{timestamp}_{start_time:.2f}_{end_time:.2f}{extension}"
+            else:
+                output_path = Path(output_path)
+                
+            # Ensure output directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Calculate duration
+            duration = end_time - start_time
+            
+            # Use ffmpeg to trim the file
+            logger.info(f"Trimming {file_path} from {start_time:.2f}s to {end_time:.2f}s")
+            
+            # Determine if it's a video or audio file
+            is_video = any(stream.get('codec_type') == 'video' 
+                          for stream in ffmpeg.probe(file_path)['streams'])
+            
+            # Set up ffmpeg command
+            input_stream = ffmpeg.input(str(file_path), ss=start_time, t=duration)
+            
+            if is_video:
+                # For video files, maintain both audio and video
+                output_stream = ffmpeg.output(
+                    input_stream, 
+                    str(output_path),
+                    c='copy',  # Use copy codec for faster processing
+                    **self.ffmpeg_options
+                )
+            else:
+                # For audio files
+                output_stream = ffmpeg.output(
+                    input_stream,
+                    str(output_path),
+                    acodec='copy',  # Use copy codec for faster processing
+                    **self.ffmpeg_options
+                )
+                
+            # Run the ffmpeg command
+            output_stream.run(quiet=True)
+            
+            logger.info(f"Trimmed file saved to {output_path}")
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Error trimming file: {str(e)}")
+            raise

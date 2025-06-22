@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, lazy, Suspense, useEffect } from "react";
 import { UploadCloud, Youtube, Loader2, FileAudio, Info, ChevronRight, ChevronDown, AlertTriangle, Clock, X, FileText, BarChart2 } from "lucide-react";
 import { useProcessing } from "@/hooks/useProcessing";
+import { useTrimming } from "@/hooks/useTrimming";
 import { Podcast } from "lucide-react";
 
 // Dynamically import components
@@ -10,6 +11,7 @@ const TranscriptSection = lazy(() => import("@/components/TranscriptSection"));
 const AbstractiveSummary = lazy(() => import("@/components/AbstractiveSummary"));
 const ExtractiveSummary = lazy(() => import("@/components/ExtractiveSummary"));
 const TopicDetection = lazy(() => import("@/components/TopicDetection"));
+const TrimmedClips = lazy(() => import("@/components/TrimmedClips"));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -60,12 +62,27 @@ export default function PodcastSummarizer() {
     setError,
     jobId
   } = useProcessing();
+  
+  const {
+    trimming,
+    trimmedClips,
+    error: trimmingError,
+    trimAudio,
+    removeTrimmedClip
+  } = useTrimming();
 
   // Reset states on fresh render
   useEffect(() => {
     setSelectedFile(null);
     setYoutubeURL("");
   }, []);
+  
+  // Set trimming error if any
+  useEffect(() => {
+    if (trimmingError) {
+      setError(trimmingError);
+    }
+  }, [trimmingError, setError]);
 
   // Handle file selection
   const handleFileChange = (e) => {
@@ -194,6 +211,7 @@ export default function PodcastSummarizer() {
                       <p>2. Our AI system will transcribe the audio content</p>
                       <p>3. Get detailed transcription, summaries, and topic analysis</p>
                       <p>4. Review and export your results</p>
+                      <p>5. Trim highlights from key points to share or save</p>
                     </div>
                   )}
                 </div>
@@ -357,6 +375,16 @@ export default function PodcastSummarizer() {
 
           {/* Main Content Area - Results */}
           <div className="flex-1 space-y-6">
+            {/* Trimmed Clips Section */}
+            {trimmedClips.length > 0 && (
+              <Suspense fallback={<ComponentLoader />}>
+                <TrimmedClips 
+                  clips={trimmedClips} 
+                  onRemoveClip={removeTrimmedClip} 
+                />
+              </Suspense>
+            )}
+            
             {/* Rest of the content - Only show when result is available */}
             {(result || isLoadingResult) && (
               <Suspense fallback={<ComponentLoader />}>
@@ -393,6 +421,10 @@ export default function PodcastSummarizer() {
                       <ExtractiveSummary 
                         summary={result.extractiveSummary || result.extractive_summary}
                         transcript={result.transcript}
+                        segments={result.segments}
+                        onTrimAudio={trimAudio}
+                        jobId={result.jobId || jobId}
+                        isTrimming={trimming}
                       />
                     </Suspense>
                   </>
@@ -401,7 +433,7 @@ export default function PodcastSummarizer() {
             )}
 
             {/* Initial State */}
-            {!result && !isLoadingResult && !processing && (
+            {!result && !isLoadingResult && !processing && trimmedClips.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-slate-400">
                   Upload an audio file or provide a YouTube URL to get started

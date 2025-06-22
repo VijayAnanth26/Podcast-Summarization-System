@@ -89,12 +89,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Log the port the app will be running on
-port = int(os.environ.get("PORT", 8000))
-logger.info(f"FastAPI will run on port: {port}")
-
 # CORS configuration
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,https://podcast-summarization-system.vercel.app").split(",")
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 ALLOWED_HEADERS = [
     "Content-Type",
@@ -132,6 +128,24 @@ class ProcessResponse(BaseModel):
     job_id: str
     status: str
     file_name: str
+    error: Optional[str] = None
+
+class TrimRequest(BaseModel):
+    """Request model for trimming audio/video."""
+    job_id: str
+    start_time: float
+    end_time: float
+    highlight_text: Optional[str] = None
+
+class TrimResponse(BaseModel):
+    """Response model for trimming results."""
+    job_id: str
+    trim_id: str
+    file_name: str
+    audio_url: str
+    start_time: float
+    end_time: float
+    highlight_text: Optional[str] = None
     error: Optional[str] = None
 
 # Simplified timeout handler
@@ -185,10 +199,7 @@ def healthcheck():
     """
     Health check endpoint to verify API is running.
     """
-    # Log the port being used
-    port = os.environ.get("PORT", 8000)
-    logger.info(f"API running on port: {port}")
-    return {"status": "ok", "service": "Podcast Processing API", "port": port}
+    return {"status": "ok", "service": "Podcast Processing API"}
 
 # Root path redirect
 @app.get("/")
@@ -666,22 +677,83 @@ async def get_audio(filename: str):
     
     return FileResponse(file_path)
 
-# Add this at the end of the file
-if __name__ == "__main__":
-    import uvicorn
-    import sys
+# Trim audio/video endpoint
+@app.post("/api/trim", response_model=TrimResponse)
+async def trim_audio(trim_request: TrimRequest):
+    """
+    Trim audio/video file based on start and end times
     
-    # Render sets PORT to 10000 by default
-    port = int(os.environ.get("PORT", 10000))
-    host = "0.0.0.0"  # Must bind to 0.0.0.0 for Render
-    
-    # Print debug information
-    print(f"Python version: {sys.version}")
-    print(f"Starting server on http://{host}:{port}")
-    print(f"Environment variables: PORT={os.environ.get('PORT')}")
-    logger.info(f"BINDING TO: http://{host}:{port}")
-    
-    # Run the app with the correct host and port
-    uvicorn.run("app:app", host=host, port=port)
+    Args:
+        trim_request: TrimRequest with job_id, start_time, and end_time
+        
+    Returns:
+        TrimResponse with trimmed file information
+    """
+    try:
+        job_id = trim_request.job_id
+        start_time = trim_request.start_time
+        end_time = trim_request.end_time
+        highlight_text = trim_request.highlight_text
+        
+        # Find the original file
+        results_file = UPLOAD_DIR / f"{job_id}_results.json"
+        if not results_file.exists():
+            raise HTTPException(status_code=404, detail=f"Results not found for job ID: {job_id}")
+            
+        # Load results to get the original file path
+        with open(results_file, 'r') as f:
+            results = json.load(f)
+            
+        # Get the original file path
+        if "metadata" not in results or "file_path" not in results["metadata"]:
+            raise HTTPException(status_code=400, detail="Original file path not found in results")
+            
+        original_file_path = results["metadata"]["file_path"]
+        if not os.path.exists(original_file_path):
+            raise HTTPException(status_code=404, detail="Original audio/video file not found")
+            
+        # Create a unique ID for this trim
+        trim_id = str(uuid.uuid4())
+        
+        # Get file extension
+        file_extension = os.path.splitext(original_file_path)[1]
+        
+        # Create output path
+        output_filename = f"{trim_id}{file_extension}"
+        output_path = UPLOAD_DIR / output_filename
+        
+        # Initialize audio processor
+        audio_processor = AudioProcessor()
+        
+        # Trim the file
+        trimmed_file = audio_processor.trim_audio(
+            file_path=original_file_path,
+            start_time=start_time,
+            end_time=end_time,
+            output_path=output_path
+        )
+        
+        # Create response
+        response = TrimResponse(
+            job_id=job_id,
+            trim_id=trim_id,
+            file_name=output_filename,
+            audio_url=f"/api/audio/{output_filename}",
+            start_time=start_time,
+            end_time=end_time,
+            highlight_text=highlight_text
+        )
+        
+        return response
+        
+    except FileNotFoundError as e:
+        logger.error(f"File not found error: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        logger.error(f"Value error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error trimming audio: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error trimming audio: {str(e)}")
 
 

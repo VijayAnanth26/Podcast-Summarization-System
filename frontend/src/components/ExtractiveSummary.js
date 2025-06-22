@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { ListOrdered, AlertTriangle, ChevronRight } from "lucide-react";
+import { ListOrdered, AlertTriangle, ChevronRight, Scissors } from "lucide-react";
 import PropTypes from 'prop-types';
 
 // Helper function to process array of summary points
@@ -43,9 +43,14 @@ const processSummaryArray = (arr) => {
 const ExtractiveSummary = ({ 
   summary = [],
   maxPoints = 5,
-  transcript = ""
+  transcript = "",
+  segments = [],
+  onTrimAudio = null,
+  jobId = null,
+  isTrimming = false
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [trimmingIndex, setTrimmingIndex] = useState(null);
 
   // Process the summary to ensure it's an array and has items
   const { processedSummary, hasError } = useMemo(() => {
@@ -83,6 +88,86 @@ const ExtractiveSummary = ({
   const toggleExpanded = useCallback(() => {
     setExpanded(prev => !prev);
   }, []);
+
+  // Find segment times for a given text
+  const findSegmentTimes = useCallback((text) => {
+    if (!segments || !segments.length || !text) return null;
+    
+    // Clean the text for better matching
+    const cleanText = text.toLowerCase().trim().replace(/[.,?!;:'"()\[\]{}]/g, '');
+    
+    // Look for segments that contain this text
+    for (const segment of segments) {
+      if (!segment.text) continue;
+      
+      const segmentText = segment.text.toLowerCase().trim().replace(/[.,?!;:'"()\[\]{}]/g, '');
+      
+      // Check if segment contains the key point text or vice versa
+      if (segmentText.includes(cleanText) || cleanText.includes(segmentText)) {
+        return {
+          start: segment.start,
+          end: segment.end
+        };
+      }
+    }
+    
+    // If no exact match found, try a more fuzzy approach
+    // Split the key point into words and look for segments with most word matches
+    const words = cleanText.split(/\s+/).filter(w => w.length > 3); // Only use words longer than 3 chars
+    
+    if (words.length > 2) {
+      let bestMatch = null;
+      let bestMatchScore = 0;
+      
+      for (const segment of segments) {
+        if (!segment.text) continue;
+        
+        const segmentText = segment.text.toLowerCase();
+        let matchScore = 0;
+        
+        // Count how many words from the key point appear in this segment
+        for (const word of words) {
+          if (segmentText.includes(word)) {
+            matchScore++;
+          }
+        }
+        
+        // If we found a better match
+        if (matchScore > bestMatchScore && matchScore >= Math.ceil(words.length * 0.3)) {
+          bestMatchScore = matchScore;
+          bestMatch = {
+            start: segment.start,
+            end: segment.end
+          };
+        }
+      }
+      
+      if (bestMatch) {
+        return bestMatch;
+      }
+    }
+    
+    return null;
+  }, [segments]);
+
+  // Handle trim button click
+  const handleTrim = useCallback((text, index) => {
+    if (!onTrimAudio || !jobId) return;
+    
+    // Find the segment times for this text
+    const times = findSegmentTimes(text);
+    
+    if (times) {
+      setTrimmingIndex(index);
+      onTrimAudio(jobId, times.start, times.end, text)
+        .finally(() => {
+          setTrimmingIndex(null);
+        });
+    } else {
+      // If no matching segment found, show an alert
+      alert("Could not find the exact timestamp for this key point. Please try another one.");
+    }
+  }, [onTrimAudio, jobId, findSegmentTimes]);
   
   if (!finalSummary.length) {
     return (
@@ -136,6 +221,21 @@ const ExtractiveSummary = ({
             <div className="flex-1">
               <p className="text-slate-300 text-sm leading-relaxed">{item}</p>
             </div>
+            {onTrimAudio && jobId && segments && segments.length > 0 && (
+              <button
+                onClick={() => handleTrim(item, index)}
+                disabled={isTrimming || trimmingIndex === index}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                  isTrimming || trimmingIndex === index
+                    ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                    : "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                }`}
+                title="Trim audio to this key point"
+              >
+                <Scissors size={14} />
+                <span>{trimmingIndex === index ? "Trimming..." : "Trim"}</span>
+              </button>
+            )}
           </div>
         ))}
         
@@ -159,7 +259,11 @@ ExtractiveSummary.propTypes = {
     PropTypes.object
   ]),
   maxPoints: PropTypes.number,
-  transcript: PropTypes.string
+  transcript: PropTypes.string,
+  segments: PropTypes.array,
+  onTrimAudio: PropTypes.func,
+  jobId: PropTypes.string,
+  isTrimming: PropTypes.bool
 };
 
 export default ExtractiveSummary; 
