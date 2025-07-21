@@ -1,31 +1,31 @@
 # Core dependencies
-fastapi>=0.95.0
-uvicorn[standard]>=0.21.1
-pydantic>=1.10.7
-python-dotenv>=1.0.0
-python-multipart>=0.0.6
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+python-multipart
 
 # Media processing
-ffmpeg-python>=0.2.0
-yt-dlp>=2023.3.4
-pydub>=0.25.1
+ffmpeg-python
+yt-dlp
+pydub
 
 # Audio transcription and processing
-torch>=2.0.0
-openai-whisper>=20230314
-torchaudio>=2.0.0
-numpy>=1.24.2
+torch
+openai-whisper
+torchaudio
+numpy
 
 # NLP and analysis
-nltk>=3.8.1
-transformers>=4.28.1
-sentencepiece>=0.1.97
-sumy>=0.11.0
+nltk
+transformers
+# sentencepiece==0.1.99  # Requires C++ compiler to build, install separately if needed
+sumy
 
 # Additional requirements
-matplotlib>=3.7.1
-accelerate>=0.18.0 
+matplotlib
+accelerate
 
 # Topic modeling
 bertopic
-sentence-transformers
+sentence-transformers  # This includes sentencepiece as a dependency but with prebuilt wheels
