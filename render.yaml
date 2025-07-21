@@ -21,7 +21,7 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: ALLOWED_ORIGINS
-        value: https://podcast-summarizer-frontend.onrender.com
+        value: https://podcast-summarization-system.vercel.app
       - key: UPLOAD_DIR
         value: ./uploads
       - key: MAX_UPLOAD_SIZE
