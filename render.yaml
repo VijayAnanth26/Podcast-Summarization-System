@@ -9,17 +9,18 @@ services:
       cd backend
       pip install -r requirements.txt
       python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
-    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/healthcheck
+    startCommand: cd backend && python run.py
     envVars:
       - key: PORT
-        value: 8000
+        value: 10000
       - key: HOST
         value: 0.0.0.0
       - key: DEBUG
         value: false
       - key: LOG_LEVEL
         value: INFO
+      - key: ENVIRONMENT
+        value: production
       - key: ALLOWED_ORIGINS
         value: https://podcast-summarization-system.vercel.app
       - key: UPLOAD_DIR
@@ -40,6 +41,8 @@ services:
         value: true
       - key: HF_ACCESS_TOKEN
         sync: false
+      - key: PYTHONPATH
+        value: /opt/render/project/src
     disk:
       name: podcast-data
       mountPath: /opt/render/project/src/backend/uploads
